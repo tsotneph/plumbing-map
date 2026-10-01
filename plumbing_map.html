@@ -158,6 +158,9 @@ const ZIPDB = {"36530":[30.4437,-87.5547],"36550":[31.2379,-87.7256],"36576":[30
 // === optional: hardcode a permanent CSV URL so it never asks ===
 const HARDCODED_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJ7Za0rYreJah-VUPvnK982UgRFyglR9jOPR7oacOoyiSPI4zYCBolL0Bo6CXmThbOLjlddeb8uhDv/pub?gid=0&single=true&output=csv";
 
+// === this map only shows these departments; "All" = all of them ===
+const DEPT_WHITELIST = ['Plumbing Reg', 'Plumbing HE'];
+
 const map = L.map('map', { preferCanvas:false }).setView([39.5,-98.35], 4);
 const roads = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom:20, subdomains:['mt0','mt1','mt2','mt3'], attribution:'Map data © Google' });
 const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', { maxZoom:20, subdomains:['mt0','mt1','mt2','mt3'], attribution:'Imagery © Google' });
@@ -434,8 +437,10 @@ async function loadData(url, opts){
   try{
     const text=await fetchWithRetry(url, isRefresh ? 3 : 4);
     const raw=parseCSV(text);
-    const parsed=processRows(raw);
+    let parsed=processRows(raw);
     if(!parsed.length) throw new Error('Could not parse rows. Make sure the ABC-ALL sheet is published as CSV.');
+    // keep only this map's departments — so "All" means all Plumbing, not every department
+    parsed = parsed.filter(function(d){ return DEPT_WHITELIST.indexOf((d.dept||'').trim()) !== -1; });
     ALL_ROWS=parsed;
     initDateBounds();
     initReasonOptions();
